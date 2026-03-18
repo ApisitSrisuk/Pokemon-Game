@@ -1,13 +1,59 @@
-/* src/index.css */
-@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap');
+
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --primary-glow: rgba(255, 203, 5, 0.2);
+}
 
 body {
   margin: 0;
-  /* อย่าลืมกำหนด font-family ให้ body ด้วย หากไม่ได้ใช้ใน theme.js */
-  font-family: 'Pixelify Sans', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #E0E0E0; /* ให้พื้นหลังเป็นสี default ของ theme */
+  padding: 0;
+  background-color: #0a0a0b;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(61, 125, 202, 0.1) 0, transparent 50%), 
+    radial-gradient(at 100% 0%, rgba(255, 203, 5, 0.08) 0, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(220, 10, 45, 0.05) 0, transparent 50%);
+  background-attachment: fixed;
+  color: #f8f9fa;
+  font-family: 'Inter', sans-serif !important;
+  overflow-x: hidden;
 }
 
-/* ... โค้ด CSS อื่นๆ */
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border-radius: 24px;
+}
+
+.premium-gradient {
+  background: linear-gradient(135deg, #3d7dca 0%, #2a5c97 100%);
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #FFCB05, #ff4d4d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

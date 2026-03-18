@@ -15,8 +15,9 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { useTheme } from '@mui/material/styles';
 import { getMoveDetail } from '../api/pokemonApi';
+import { Button } from '@mui/material';
 
-function PokemonDetailDialog({ open, onClose, pokemon }) {
+function PokemonDetailDialog({ open, onClose, pokemon, onAddTeam }) {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm')); // Detect small screens
 
@@ -47,7 +48,7 @@ function PokemonDetailDialog({ open, onClose, pokemon }) {
       height: { xs: '20px', sm: '24px' },
       borderRadius: '12px',
     };
-  }, [theme.palette.pokemonType]);
+  }, [theme.palette.pokemonType, theme.palette.grey, theme.palette.text.primary]);
 
 
   useEffect(() => {
@@ -137,6 +138,32 @@ function PokemonDetailDialog({ open, onClose, pokemon }) {
             }}
           />
         </Box>
+
+        {onAddTeam && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+            <Button
+              variant="contained"
+              color="secondary"
+              size="large"
+              onClick={() => {
+                onAddTeam(pokemon);
+                onClose();
+              }}
+              sx={{
+                borderRadius: '50px',
+                px: 4,
+                fontWeight: 'bold',
+                boxShadow: theme.shadows[4],
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: theme.shadows[8],
+                }
+              }}
+            >
+              Add to Team
+            </Button>
+          </Box>
+        )}
 
         <Typography variant="body1" sx={{ mb: { xs: 0.5, sm: 1 }, fontWeight: 'bold' }}>
           Types:{' '}

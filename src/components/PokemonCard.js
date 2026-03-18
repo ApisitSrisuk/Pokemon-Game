@@ -1,10 +1,34 @@
 // src/components/PokemonCard.js
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { Card, CardMedia, CardContent, Typography, Box, Chip, useTheme, LinearProgress } from '@mui/material';
+import gsap from 'gsap';
 
-function PokemonCard({ pokemonData, loading, error }) {
+function PokemonCard({ pokemonData, loading, error, onClick, isShiny }) {
   const theme = useTheme();
+  const cardRef = useRef(null);
+
+  const handleMouseEnter = () => {
+    gsap.to(cardRef.current, {
+      y: -10,
+      scale: 1.02,
+      boxShadow: isShiny 
+        ? '0 20px 40px rgba(255, 215, 0, 0.4), 0 0 30px rgba(255, 215, 0, 0.3)'
+        : '0 20px 40px rgba(0,0,0,0.4), 0 0 20px rgba(255, 203, 5, 0.2)',
+      duration: 0.4,
+      ease: 'power2.out'
+    });
+  };
+
+  const handleMouseLeave = () => {
+    gsap.to(cardRef.current, {
+      y: 0,
+      scale: 1,
+      boxShadow: isShiny ? '0 0 20px rgba(255, 215, 0, 0.3)' : '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+      duration: 0.4,
+      ease: 'power2.out'
+    });
+  };
 
   if (loading) {
     return (
@@ -35,18 +59,16 @@ function PokemonCard({ pokemonData, loading, error }) {
       return {
         backgroundColor: typeColors.main,
         color: typeColors.text,
-        // Responsive margin/spacing for chips is handled by the parent Box gap
         fontWeight: 'bold',
-        fontSize: { xs: '0.65rem', sm: '0.75rem' }, // Responsive font size
-        padding: { xs: '1px 6px', sm: '2px 8px' }, // Responsive padding
-        height: { xs: '20px', sm: '24px' }, // Responsive height
+        fontSize: { xs: '0.65rem', sm: '0.75rem' },
+        padding: { xs: '1px 6px', sm: '2px 8px' },
+        height: { xs: '20px', sm: '24px' },
         borderRadius: '12px',
       };
     }
     return {
       backgroundColor: theme.palette.grey[600],
       color: theme.palette.text.primary,
-      // Responsive margin/spacing for chips is handled by the parent Box gap
       fontWeight: 'bold',
       fontSize: { xs: '0.65rem', sm: '0.75rem' },
       padding: { xs: '1px 6px', sm: '2px 8px' },
@@ -61,59 +83,74 @@ function PokemonCard({ pokemonData, loading, error }) {
   let hpBarColor;
   const hpPercentage = (currentHp / maxHp) * 100;
   if (hpPercentage <= 20) {
-    hpBarColor = theme.palette.error.main; // Low HP: Red
+    hpBarColor = theme.palette.error.main;
   } else if (hpPercentage <= 50) {
-    hpBarColor = theme.palette.warning.main; // Medium HP: Orange
+    hpBarColor = theme.palette.warning.main;
   } else {
-    hpBarColor = theme.palette.success.main; // High HP: Green
+    hpBarColor = theme.palette.success.main;
   }
-
 
   return (
     <Card
+      ref={cardRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onClick={onClick}
       sx={{
         width: '100%',
-        maxWidth: { xs: 240, sm: 280, md: 300 }, // Responsive max width
+        maxWidth: { xs: 240, sm: 280, md: 300 },
         mx: 'auto',
-        backgroundColor: theme.palette.background.paper,
-        border: `2px solid ${theme.palette.secondary.main}`,
-        boxShadow: `0 0 15px ${theme.palette.secondary.dark}, 0 0 5px ${theme.palette.primary.main}`,
-        borderRadius: '16px',
+        background: isShiny ? 'rgba(255, 215, 0, 0.05)' : 'rgba(255, 255, 255, 0.03)',
+        backdropFilter: 'blur(12px)',
+        border: isShiny ? '1px solid rgba(255, 215, 0, 0.4)' : '1px solid rgba(255, 255, 255, 0.1)',
+        boxShadow: isShiny ? '0 0 20px rgba(255, 215, 0, 0.2)' : '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+        borderRadius: '24px',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         pb: 2,
         position: 'relative',
-        transition: 'all 0.3s ease-in-out',
-        '&:hover': {
-          transform: 'scale(1.03)',
-          boxShadow: `0 0 20px ${theme.palette.secondary.main}, 0 0 8px ${theme.palette.primary.main}`,
+        cursor: 'pointer',
+        animation: isShiny ? 'shinyGlow 3s infinite alternate' : 'none',
+        '@keyframes shinyGlow': {
+          '0%': { boxShadow: '0 0 10px rgba(255, 215, 0, 0.2)' },
+          '100%': { boxShadow: '0 0 30px rgba(255, 215, 0, 0.5)' }
         }
       }}
     >
       <Box
         sx={{
           width: '100%',
-          height: { xs: 150, sm: 170, md: 180 }, // Responsive height for image area
-          backgroundColor: theme.palette.background.darker,
+          height: { xs: 150, sm: 170, md: 180 },
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          borderBottom: `1px solid ${theme.palette.grey[700]}`,
+          background: isShiny ? 'rgba(255, 215, 0, 0.1)' : 'rgba(0,0,0,0.2)',
+          position: 'relative',
         }}
       >
+        {isShiny && (
+           <Typography sx={{ 
+             position: 'absolute', top: 5, right: 10, fontSize: '0.7rem', 
+             color: '#FFD700', fontWeight: 'bold', textShadow: '0 0 5px #000'
+           }}>
+             SHINY ✨
+           </Typography>
+        )}
         <CardMedia
           component="img"
           image={pokemonData.sprites?.other?.['official-artwork']?.front_default || pokemonData.sprites?.front_default || 'https://via.placeholder.com/120'}
           alt={pokemonData.name}
           sx={{
-            width: 'auto', // Let image scale naturally within height/width constraints
-            height: '100%', // Ensure image fills container height
-            maxHeight: { xs: 120, sm: 140, md: 160 }, // Max height for the image itself
-            maxWidth: '100%', // Ensure image does not overflow
+            width: 'auto',
+            height: '100%',
+            maxHeight: { xs: 120, sm: 140, md: 160 },
+            maxWidth: '100%',
             objectFit: 'contain',
-            filter: currentHp <= 0 ? 'grayscale(100%) brightness(50%)' : 'none',
+            filter: currentHp <= 0 
+              ? 'grayscale(100%) brightness(50%)' 
+              : (isShiny ? 'hue-rotate(180deg) brightness(1.2) contrast(1.1)' : 'none'),
             transition: 'filter 0.5s ease-in-out',
           }}
         />

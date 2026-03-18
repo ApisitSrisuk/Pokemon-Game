@@ -1,5 +1,3 @@
-// src/components/BattleArena.js
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
@@ -12,13 +10,12 @@ import {
   FormControl,
   InputLabel,
   CircularProgress,
-  LinearProgress,
   useTheme,
-  Slide,
 } from '@mui/material';
 import HealthBar from './HealthBar';
-import PokemonCard from './PokemonCard'; // <--- **บรรทัดนี้ต้องมีและถูกต้อง!**
+import PokemonCard from './PokemonCard';
 import { getPokemonByName, getMoveDetail, getTypeEffectiveness } from '../api/pokemonApi';
+import gsap from 'gsap';
 
 // Cache for type effectiveness data
 const typeEffectivenessCache = {};
@@ -92,12 +89,27 @@ function BattleArena({ playerTeam }) {
   const [battleLog, setBattleLog] = useState([]);
   const [loadingBattle, setLoadingBattle] = useState(true);
   const [errorBattle, setErrorBattle] = useState(null);
+  const [showArena, setShowArena] = useState(false);
   const [selectedPlayerPokemonId, setSelectedPlayerPokemonId] = useState('');
   const [isPlayerTurn, setIsPlayerTurn] = useState(true);
   const [battleOver, setBattleOver] = useState(false);
-  const [showArena, setShowArena] = useState(false);
-
   const typeEffectivenessRef = useRef({});
+  const playerRef = useRef(null);
+  const opponentRef = useRef(null);
+  const arenaRef = useRef(null);
+
+  useEffect(() => {
+    if (showArena) {
+      gsap.fromTo(playerRef.current, 
+        { x: -200, opacity: 0 },
+        { x: 0, opacity: 1, duration: 1, ease: 'power3.out', delay: 0.5 }
+      );
+      gsap.fromTo(opponentRef.current, 
+        { x: 200, opacity: 0 },
+        { x: 0, opacity: 1, duration: 1, ease: 'power3.out', delay: 0.5 }
+      );
+    }
+  }, [showArena]);
 
   // 1. Fetch all type effectiveness data once
   useEffect(() => {
@@ -185,6 +197,43 @@ function BattleArena({ playerTeam }) {
     fetchBattlePokemons();
   }, [playerTeam]);
 
+  const createParticles = useCallback((color, x, y) => {
+    const container = arenaRef.current;
+    if (!container) return;
+
+    for (let i = 0; i < 15; i++) {
+        const particle = document.createElement('div');
+        const size = Math.random() * 6 + 2;
+        particle.style.position = 'absolute';
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        particle.style.backgroundColor = color;
+        particle.style.borderRadius = '50%';
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        particle.style.pointerEvents = 'none';
+        particle.style.zIndex = '100';
+        particle.style.boxShadow = `0 0 10px ${color}`;
+        container.appendChild(particle);
+
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = Math.random() * 150 + 50;
+        
+        gsap.to(particle, {
+            x: Math.cos(angle) * velocity,
+            y: Math.sin(angle) * velocity,
+            opacity: 0,
+            scale: 0,
+            duration: Math.random() * 0.5 + 0.5,
+            ease: 'power2.out',
+            onComplete: () => {
+                if (container.contains(particle)) {
+                    container.removeChild(particle);
+                }
+            }
+        });
+    }
+  }, []);
 
   const performAttack = useCallback((attacker, defender, setDefender, move, isOpponent = false) => {
     const attackerName = attacker.name.charAt(0).toUpperCase() + attacker.name.slice(1);
@@ -215,30 +264,54 @@ function BattleArena({ playerTeam }) {
     }
 
     setBattleLog(prevLog => [...prevLog, { message: logMessage, type: effectiveness === 'miss' ? 'miss' : (effectiveness === 'no_effect' ? 'no_effect' : (effectiveness === 'super_effective' ? 'super_effective' : (effectiveness === 'not_very_effective' ? 'not_very_effective' : 'neutral')))}]);
-    setDefender(prev => ({ ...prev, currentHp: newDefenderHp }));
+    
+    // Impact Animation
+    const targetRef = isOpponent ? playerRef : opponentRef;
+    const moveColor = theme.palette.pokemonType[move.type.name]?.main || theme.palette.primary.main;
+
+    // Flash Effect on target
+    gsap.to(targetRef.current, {
+        backgroundColor: `${moveColor}44`,
+        duration: 0.1,
+        repeat: 3,
+        yoyo: true,
+        ease: 'none',
+        onComplete: () => {
+            gsap.to(targetRef.current, { backgroundColor: 'transparent', duration: 0.2 });
+        }
+    });
+
+    // Shake Effect
+    gsap.to(targetRef.current, {
+      x: isOpponent ? -15 : 15,
+      duration: 0.05,
+      repeat: 7,
+      yoyo: true,
+      ease: 'none',
+      onComplete: () => {
+        gsap.to(targetRef.current, { x: 0, duration: 0.1 });
+        setDefender(prev => ({ ...prev, currentHp: newDefenderHp }));
+        
+        // Spawn Particles at target center
+        if (targetRef.current && hit !== false && effectiveness !== 'no_effect') {
+            const rect = targetRef.current.getBoundingClientRect();
+            const arenaRect = arenaRef.current.getBoundingClientRect();
+            const x = rect.left - arenaRect.left + rect.width / 2;
+            const y = rect.top - arenaRect.top + rect.height / 2;
+            createParticles(moveColor, x, y);
+        }
+      }
+    });
 
     if (newDefenderHp <= 0) {
-      setBattleLog(prevLog => [...prevLog, { message: `${defenderName} fainted!`, type: 'fainted' }]);
-      setBattleOver(true);
-      setIsPlayerTurn(false);
-    }
-  }, []);
-
-  const handlePlayerAttack = useCallback(async (move) => {
-    if (!playerPokemon || !opponentPokemon || battleOver || !isPlayerTurn) return;
-
-    performAttack(playerPokemon, opponentPokemon, setOpponentPokemon, move, false);
-
-    setTimeout(() => {
-      // Check for fainted status again before opponent attacks
-      if (opponentPokemon && opponentPokemon.currentHp > 0 && playerPokemon && playerPokemon.currentHp > 0) {
-        setIsPlayerTurn(false);
-        handleOpponentAttack();
-      } else {
+      setTimeout(() => {
+        setBattleLog(prevLog => [...prevLog, { message: `${defenderName} fainted!`, type: 'fainted' }]);
         setBattleOver(true);
-      }
-    }, 1500);
-  }, [playerPokemon, opponentPokemon, battleOver, isPlayerTurn, performAttack]);
+        setIsPlayerTurn(false);
+      }, 1000);
+    }
+  }, [createParticles, theme]);
+
 
   const handleOpponentAttack = useCallback(() => {
     if (!opponentPokemon || !playerPokemon || battleOver) return;
@@ -263,6 +336,22 @@ function BattleArena({ playerTeam }) {
       }
     }, 1500);
   }, [opponentPokemon, playerPokemon, battleOver, performAttack]);
+
+  const handlePlayerAttack = useCallback(async (move) => {
+    if (!playerPokemon || !opponentPokemon || battleOver || !isPlayerTurn) return;
+
+    performAttack(playerPokemon, opponentPokemon, setOpponentPokemon, move, false);
+
+    setTimeout(() => {
+      // Check for fainted status again before opponent attacks
+      if (opponentPokemon && opponentPokemon.currentHp > 0 && playerPokemon && playerPokemon.currentHp > 0) {
+        setIsPlayerTurn(false);
+        handleOpponentAttack();
+      } else {
+        setBattleOver(true);
+      }
+    }, 1500);
+  }, [playerPokemon, opponentPokemon, battleOver, isPlayerTurn, performAttack, handleOpponentAttack]);
 
   const resetBattle = useCallback(async () => {
     setLoadingBattle(true);
@@ -292,6 +381,7 @@ function BattleArena({ playerTeam }) {
     const randomOpponentName = opponentNames[Math.floor(Math.random() * opponentNames.length)];
     try {
       const opponentData = await getPokemonByName(randomOpponentName);
+      const isOpponentShiny = Math.random() < 0.05; // 5% Shiny chance
       const opponentMovesPromises = opponentData.moves
         .filter(moveInfo => moveInfo.version_group_details.some(d => d.move_learn_method.name === 'level-up' && d.level_learned_at > 0))
         .sort(() => 0.5 - Math.random())
@@ -303,6 +393,7 @@ function BattleArena({ playerTeam }) {
         currentHp: opponentData.stats.find(s => s.stat.name === 'hp').base_stat,
         moves: opponentDetailedMoves,
         level: 50,
+        isShiny: isOpponentShiny
       });
       setLoadingBattle(false);
       setTimeout(() => setShowArena(true), 100);
@@ -375,27 +466,35 @@ function BattleArena({ playerTeam }) {
 
 
   return (
-    <Slide direction="up" in={showArena} mountOnEnter unmountOnExit timeout={500}>
-      <Box sx={{
-        p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
-        background: `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.darker} 100%)`,
-        borderRadius: 4,
-        boxShadow: '0px 8px 24px rgba(0,0,0,0.5)',
-        minHeight: '60vh', // Minimum height, can be adjusted
+    <Box 
+      ref={arenaRef}
+      sx={{
+        p: { xs: 2, sm: 3, md: 4 },
+        background: 'rgba(255, 255, 255, 0.02)',
+        backdropFilter: 'blur(20px)',
+        borderRadius: '32px',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        minHeight: '60vh',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
         overflow: 'hidden',
-        backgroundImage: 'url(/battle-bg.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundBlendMode: 'overlay',
-        animation: 'bg-pan 20s infinite alternate linear',
-        '@keyframes bg-pan': {
-          '0%': { backgroundPosition: '0% 0%' },
-          '100%': { backgroundPosition: '100% 100%' },
-        },
-      }}>
+        transition: 'all 0.5s ease',
+        '&::before': {
+           content: '""',
+           position: 'absolute',
+           top: 0, left: 0, right: 0, bottom: 0,
+           opacity: 0.15,
+           zIndex: -1,
+           transition: 'background 1s ease',
+           background: `radial-gradient(circle at center, ${
+             isPlayerTurn 
+             ? (theme.palette.pokemonType[playerPokemon?.types[0]?.type?.name]?.main || '#3d7dca') 
+             : (theme.palette.pokemonType[opponentPokemon?.types[0]?.type?.name]?.main || '#d32f2f')
+           } 0%, transparent 70%)`
+        }
+      }}
+    >
         {/* Battle Over Overlay */}
         {battleOver && (
           <Box sx={{
@@ -459,11 +558,12 @@ function BattleArena({ playerTeam }) {
             sm={6} // Half width on small+
             md={4} // One-third width on medium+
             sx={{
-              order: { xs: 1, sm: 1 }, // Order on small screens, remains same on larger
+              order: { xs: 1, sm: 1 },
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center'
             }}
+            ref={opponentRef}
           >
             <Paper elevation={6} sx={{
               p: { xs: 1.5, sm: 2 }, // Responsive padding
@@ -476,7 +576,7 @@ function BattleArena({ playerTeam }) {
               overflow: 'hidden'
             }}>
               <Typography variant="h6" sx={{ mb: { xs: 0.5, sm: 1 }, color: theme.palette.primary.main, textShadow: '1px 1px 2px #000', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>Opponent's Pokemon</Typography>
-              <PokemonCard pokemonData={opponentPokemon} />
+              <PokemonCard pokemonData={opponentPokemon} isShiny={opponentPokemon?.isShiny} />
               {opponentPokemon && (
                 <Box sx={{ width: '90%', mx: 'auto', mt: { xs: 1.5, sm: 2 } }}> {/* Responsive margin-top */}
                   <HealthBar currentHp={opponentPokemon.currentHp} maxHp={opponentPokemon.stats.find(s => s.stat.name === 'hp')?.base_stat} />
@@ -585,11 +685,12 @@ function BattleArena({ playerTeam }) {
             sm={6} // Half width on small+
             md={4} // One-third width on medium+
             sx={{
-              order: { xs: 2, sm: 3 }, // Order changes: below controls on xs, right of controls on sm+
+              order: { xs: 2, sm: 3 },
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center'
             }}
+            ref={playerRef}
           >
             <Paper elevation={6} sx={{
               p: { xs: 1.5, sm: 2 }, // Responsive padding
@@ -602,7 +703,7 @@ function BattleArena({ playerTeam }) {
               overflow: 'hidden'
             }}>
               <Typography variant="h6" sx={{ mb: { xs: 0.5, sm: 1 }, color: theme.palette.secondary.main, textShadow: '1px 1px 2px #000', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>Your Pokemon</Typography>
-              <PokemonCard pokemonData={playerPokemon} />
+              <PokemonCard pokemonData={playerPokemon} isShiny={playerPokemon?.isShiny} />
               {playerPokemon && (
                 <Box sx={{ width: '90%', mx: 'auto', mt: { xs: 1.5, sm: 2 } }}> {/* Responsive margin-top */}
                   <HealthBar currentHp={playerPokemon.currentHp} maxHp={playerPokemon.stats.find(s => s.stat.name === 'hp')?.base_stat} />
@@ -689,8 +790,7 @@ function BattleArena({ playerTeam }) {
           )}
         </Paper>
       </Box>
-    </Slide>
-  );
+    );
 }
 
 export default BattleArena;

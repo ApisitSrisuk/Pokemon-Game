@@ -1,6 +1,4 @@
-// src/App.js
-
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Container,
   AppBar,
@@ -10,11 +8,15 @@ import {
   CssBaseline,
   Button,
   useTheme,
-  useMediaQuery // <-- Import useMediaQuery
+  useMediaQuery,
+  Avatar,
+  IconButton,
 } from '@mui/material';
+import { SportsEsports, CatchingPokemon, Menu as MenuIcon } from '@mui/icons-material';
 import Pokedex from './components/Pokedex';
 import TeamViewer from './components/TeamViewer';
 import BattleArena from './components/BattleArena';
+import gsap from 'gsap';
 
 function App() {
   const theme = useTheme();
@@ -23,7 +25,15 @@ function App() {
 
   const [currentView, setCurrentView] = useState('pokedex'); // 'pokedex', 'battle'
   const [pokemonTeam, setPokemonTeam] = useState([]);
-  const MAX_TEAM_SIZE = 6; // กำหนดขนาดทีมสูงสุด
+  const MAX_TEAM_SIZE = 6;
+  const contentRef = useRef(null);
+
+  useEffect(() => {
+    gsap.fromTo(contentRef.current, 
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }
+    );
+  }, [currentView]);
 
   // Custom alert/message box function (replacing native alert)
   const showMessage = (message) => {
@@ -55,82 +65,103 @@ function App() {
   return (
     <Box sx={{
       flexGrow: 1,
-      backgroundColor: theme.palette.background.default,
       minHeight: '100vh',
-      display: 'flex', // Use flexbox for overall layout
-      flexDirection: 'column', // Stack children vertically
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative',
     }}>
       <CssBaseline />
-      <AppBar position="static" sx={{ backgroundColor: theme.palette.background.paper, boxShadow: theme.shadows[3] }}>
-        <Toolbar sx={{
-          minHeight: { xs: 56, sm: 64 }, // Responsive minimum height for toolbar
-          justifyContent: { xs: 'space-between', sm: 'flex-start' }, // Adjust alignment
-          flexWrap: 'wrap', // Allow items to wrap on smaller screens
-          gap: { xs: 1, sm: 2 }, // Spacing between buttons
-          py: { xs: 1, sm: 0 }, // Vertical padding for toolbar
+      
+      {/* Floating Capsule Navbar */}
+      <AppBar 
+        position="fixed" 
+        sx={{ 
+          top: 20,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: { xs: '90%', sm: 'auto' },
+          borderRadius: '50px',
+          background: 'rgba(26, 26, 28, 0.7)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+          zIndex: 1100,
+        }}
+      >
+        <Toolbar sx={{ 
+          px: { xs: 2, sm: 3 },
+          py: 0.5,
+          minHeight: { xs: 60, sm: 70 },
+          justifyContent: 'center',
+          gap: { xs: 1, sm: 3 }
         }}>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{
-              flexGrow: 1,
-              mr: { xs: 0, sm: 2 }, // Remove margin on xs, add on sm+
-              fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.75rem' }, // Responsive font size
-              whiteSpace: 'nowrap', // Prevent wrapping for title
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              color: theme.palette.primary.main,
-            }}
-          >
-            Pokemon Adventure
-          </Typography>
-          <Box sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' }, // Stack buttons on xs, row on sm+
-            gap: { xs: 1, sm: 2 }, // Spacing between buttons
-            width: { xs: '100%', sm: 'auto' }, // Full width buttons on xs
-            justifyContent: 'center', // Center buttons when stacked
-          }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mr: { xs: 0, sm: 2 } }}>
+            <Avatar 
+              src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"
+              sx={{ width: 32, height: 32, mr: 1, filter: 'drop-shadow(0 0 5px #FFCB05)' }} 
+            />
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 800,
+                display: { xs: 'none', sm: 'block' },
+                background: 'linear-gradient(to right, #FFCB05, #ff4d4d)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              PokeQuest
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
-              color="inherit"
+              startIcon={<CatchingPokemon />}
+              variant={currentView === 'pokedex' ? 'contained' : 'text'}
               onClick={() => setCurrentView('pokedex')}
               sx={{
-                color: theme.palette.text.primary,
-                fontSize: { xs: '0.8rem', sm: '0.9rem' }, // Responsive font size
-                py: { xs: 0.5, sm: 0.75 }, // Responsive vertical padding
-                px: { xs: 1, sm: 2 }, // Responsive horizontal padding
-                minWidth: { xs: 'auto', sm: 100 }, // Auto width on xs, min 100px on sm+
+                borderRadius: '30px',
+                px: 3,
+                bgcolor: currentView === 'pokedex' ? 'primary.main' : 'transparent',
+                color: currentView === 'pokedex' ? 'black' : 'white',
+                '&:hover': {
+                  bgcolor: currentView === 'pokedex' ? 'primary.light' : 'rgba(255,255,255,0.05)',
+                }
               }}
             >
               Pokedex
             </Button>
             <Button
-              color="inherit"
-              onClick={() => setCurrentView('battle')}
+              startIcon={<SportsEsports />}
+              variant={currentView === 'battle' ? 'contained' : 'text'}
               disabled={pokemonTeam.length === 0}
+              onClick={() => setCurrentView('battle')}
               sx={{
-                color: theme.palette.text.primary,
-                fontSize: { xs: '0.8rem', sm: '0.9rem' },
-                py: { xs: 0.5, sm: 0.75 },
-                px: { xs: 1, sm: 2 },
-                minWidth: { xs: 'auto', sm: 150 },
-                flexShrink: 0, // Prevent button from shrinking
+                borderRadius: '30px',
+                px: 3,
+                bgcolor: currentView === 'battle' ? 'secondary.main' : 'transparent',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: currentView === 'battle' ? 'secondary.light' : 'rgba(255,255,255,0.05)',
+                }
               }}
             >
-              Start Battle ({pokemonTeam.length} / {MAX_TEAM_SIZE})
+              Battle {pokemonTeam.length > 0 && `(${pokemonTeam.length})`}
             </Button>
           </Box>
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="lg" sx={{
-        flexGrow: 1, // Allow container to take available space
-        mt: { xs: 2, sm: 4 }, // Responsive margin-top
-        mb: { xs: 2, sm: 4 }, // Responsive margin-bottom
-        p: { xs: 1, sm: 2, md: 3 }, // Responsive padding
-        // Add minHeight or adjust height to ensure content is always visible
-        minHeight: 'calc(100vh - 120px)', // Example: 100vh minus header/footer approximate height
-      }}>
+      <Container 
+        maxWidth="lg" 
+        ref={contentRef}
+        sx={{
+          flexGrow: 1,
+          mt: { xs: 12, sm: 16 },
+          mb: 4,
+          p: { xs: 1, sm: 2 },
+        }}
+      >
         {currentView === 'pokedex' && (
           <>
             <TeamViewer team={pokemonTeam} onRemovePokemon={handleRemovePokemon} maxTeamSize={MAX_TEAM_SIZE} />

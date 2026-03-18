@@ -1,17 +1,20 @@
 // src/theme/theme.js
 import { createTheme, responsiveFontSizes } from '@mui/material/styles'; // Import responsiveFontSizes
 
+const themeBackground = 'rgba(18, 18, 18, 0.8)';
+const glassBackground = 'rgba(30, 30, 30, 0.6)';
+
 let theme = createTheme({
   palette: {
-    mode: 'dark', // หรือ 'light' ถ้าคุณชอบ UI แบบสว่าง
+    mode: 'dark',
     primary: {
-      main: '#FFCB05', // Pikachu yellow - เหมาะกับ Pokemon
+      main: '#FFCB05', // Pikachu yellow
       light: '#FFEA80',
       dark: '#CC9D00',
       contrastText: '#000000',
     },
     secondary: {
-      main: '#3D7DCA', // Blastoise blue - สีรอง
+      main: '#3D7DCA', // Blastoise blue
       light: '#6FA8DE',
       dark: '#2A5C97',
       contrastText: '#FFFFFF',
@@ -41,15 +44,13 @@ let theme = createTheme({
       contrastText: '#FFFFFF',
     },
     background: {
-      default: '#121212', // Dark background
-      paper: '#1E1E1E',   // Slightly lighter dark for cards
-      darker: '#0A0A0A', // Even darker for gradients (custom, ensure use in components)
+      default: '#0a0a0b', // Deep dark
+      paper: '#1a1a1c',   // Card background
     },
     text: {
-      primary: '#FFFFFF',
-      secondary: '#B0B0B0',
-      disabled: '#757575',
-      light: '#FFFFFF', // เพิ่มสี text.light สำหรับ ContrastText (ถ้ามี use case เฉพาะ)
+      primary: '#f8f9fa',
+      secondary: '#adb5bd',
+      disabled: '#6c757d',
     },
     pokemonType: {
       normal: { main: '#A8A77A', text: '#FFFFFF' },
@@ -73,19 +74,14 @@ let theme = createTheme({
     },
   },
   typography: {
-    fontFamily: ['"Press Start 2P"', 'monospace'].join(','), // แนะนำให้เพิ่ม font นี้เพื่อความ Retro
-    // Define base font sizes. responsiveFontSizes will handle scaling.
-    h1: { fontSize: '4.5rem' },
-    h2: { fontSize: '3.5rem' },
-    h3: { fontSize: '2.8rem' },
-    h4: { fontSize: '2.2rem' },
-    h5: { fontSize: '1.6rem' },
-    h6: { fontSize: '1.2rem' },
-    body1: { fontSize: '1rem' },
-    body2: { fontSize: '0.875rem' },
-    caption: { fontSize: '0.75rem' },
-    button: { fontSize: '0.875rem' },
-    overline: { fontSize: '0.75rem' },
+    fontFamily: '"Outfit", "Inter", sans-serif',
+    h1: { fontWeight: 800, letterSpacing: '-0.02em' },
+    h2: { fontWeight: 800, letterSpacing: '-0.02em' },
+    h3: { fontWeight: 700, letterSpacing: '-0.01em' },
+    h4: { fontWeight: 700 },
+    h5: { fontWeight: 600 },
+    h6: { fontWeight: 600 },
+    button: { textTransform: 'none', fontWeight: 600 },
   },
   // Define breakpoints explicitly if you need to customize them
   breakpoints: {
@@ -101,47 +97,45 @@ let theme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: '#303030', // สีเข้มสำหรับ AppBar
-          // Add responsive height/padding if needed directly in AppBar component
+          backgroundColor: 'transparent',
+          backgroundImage: 'none',
+          boxShadow: 'none',
         },
       },
     },
     MuiButton: {
       styleOverrides: {
         root: {
-          fontWeight: 'bold',
-          borderRadius: '8px',
-          boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .3)',
-          transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+          borderRadius: '12px',
+          padding: '8px 20px',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 6px 10px 2px rgba(0, 0, 0, .4)',
+            transform: 'translateY(-2px) scale(1.02)',
+            boxShadow: '0 8px 20px rgba(255, 203, 5, 0.2)',
           },
-          // Responsive padding/font size can be applied here globally if desired
-          // For example:
-          // padding: '8px 16px', // Default
-          // '@media (max-width:600px)': {
-          //   padding: '6px 12px', // Smaller on small screens
-          //   fontSize: '0.75rem',
-          // },
         },
       },
     },
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: '12px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-          // Responsive dimensions for cards are usually handled in the component itself
-          // based on Grid system or specific sizing props, not globally here.
+          borderRadius: '24px',
+          backgroundColor: glassBackground,
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+          overflow: 'hidden',
         },
       },
     },
     MuiPaper: {
       styleOverrides: {
         root: {
-          borderRadius: '12px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          borderRadius: '24px',
+          backgroundColor: glassBackground,
+          backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.4)',
         },
       },
     },

@@ -9,21 +9,17 @@ import {
   TextField,
   InputAdornment,
   Container,
-  Card,
-  CardMedia,
-  CardContent,
-  Button,
-  useTheme,
-  Chip,
-  Select,
-  MenuItem,
   FormControl,
   InputLabel,
-  useMediaQuery, // Import useMediaQuery for responsive adjustments
+  Select,
+  MenuItem,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { getPokemonList, getPokemonByName } from '../api/pokemonApi';
 import PokemonDetailDialog from './PokemonDetailDialog';
+import PokemonCard from './PokemonCard';
 
 // --- Generation ID Ranges ---
 const GENERATION_RANGES = {
@@ -56,26 +52,6 @@ function Pokedex({ onSelectPokemon }) {
   const [offset, setOffset] = useState(0);
   const LIMIT = 20;
 
-  const getTypeChipStyles = useCallback((type) => {
-    const typeKey = type.toLowerCase();
-    const typeColors = theme.palette.pokemonType?.[typeKey]; // Use optional chaining for safety
-    if (typeColors) {
-      return {
-        backgroundColor: typeColors.main,
-        color: typeColors.text,
-        marginRight: '0.5rem',
-        fontWeight: 'bold',
-        textShadow: '0px 1px 2px rgba(0,0,0,0.2)', // Subtle text shadow for readability
-      };
-    }
-    return {
-      backgroundColor: theme.palette.grey[400], // Slightly darker grey for default
-      color: theme.palette.grey[900], // Darker text for contrast
-      marginRight: '0.5rem',
-      fontWeight: 'bold',
-      textShadow: '0px 1px 2px rgba(0,0,0,0.2)',
-    };
-  }, [theme.palette.pokemonType]);
 
   useEffect(() => {
     const fetchAllPokemonNames = async () => {
@@ -107,10 +83,16 @@ function Pokedex({ onSelectPokemon }) {
       const detailedPokemonPromises = namesToFetch.map(name => getPokemonByName(name));
       const newPokemonDetails = await Promise.all(detailedPokemonPromises);
 
+      // Add 5% Shiny chance
+      const shinyProcessedDetails = newPokemonDetails.map(p => ({
+        ...p,
+        isShiny: Math.random() < 0.05
+      }));
+
       setDisplayedPokemonDetails(prev => {
-        if (shouldReset) return newPokemonDetails;
+        if (shouldReset) return shinyProcessedDetails;
         const newIds = new Set(prev.map(p => p.id));
-        const filteredNewDetails = newPokemonDetails.filter(p => !newIds.has(p.id));
+        const filteredNewDetails = shinyProcessedDetails.filter(p => !newIds.has(p.id));
         return [...prev, ...filteredNewDetails];
       });
       setOffset(currentOffset + currentLimit);
@@ -391,84 +373,16 @@ function Pokedex({ onSelectPokemon }) {
           {displayedPokemonDetails.map(pokemon => (
             <Grid item
               key={pokemon.id}
-              xs={12} // Full width on extra small
-              sm={6} // 2 per row on small
-              md={4} // 3 per row on medium
-              lg={3} // 4 per row on large
+              xs={12}
+              sm={6}
+              md={4}
+              lg={3}
             >
-              <Card
-                sx={{
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  p: { xs: 1.5, sm: 2 },
-                  height: '100%',
-                  borderRadius: theme.shape.borderRadius * 2,
-                  boxShadow: theme.shadows[3],
-                  transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out', // Smooth transitions
-                  backgroundColor: theme.palette.background.paper,
-                  border: `1px solid ${theme.palette.divider}`, // Subtle border for definition
-                  '&:hover': {
-                    transform: 'translateY(-8px) scale(1.02)', // More pronounced lift and slight scale
-                    boxShadow: theme.shadows[8], // Stronger shadow on hover
-                  }
-                }}
+              <PokemonCard 
+                pokemonData={pokemon} 
+                isShiny={pokemon.isShiny}
                 onClick={() => handleOpenDialog(pokemon)}
-              >
-                <CardMedia
-                  component="img"
-                  image={pokemon.sprites?.front_default || 'https://via.placeholder.com/120'}
-                  alt={pokemon.name}
-                  sx={{ width: { xs: 100, sm: 120 }, height: { xs: 100, sm: 120 }, objectFit: 'contain', mb: 1 }}
-                />
-                <CardContent sx={{ flexGrow: 1, textAlign: 'center', p: 1, width: '100%' }}>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
-                      mb: 0.5,
-                      fontWeight: 'bold',
-                      color: theme.palette.text.primary,
-                      textTransform: 'capitalize', // Capitalize first letter
-                    }}
-                  >
-                    #{String(pokemon.id).padStart(3, '0')} {pokemon.name}
-                  </Typography>
-                  <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', mb: 1, gap: { xs: '0.25rem', sm: '0.5rem' } }}>
-                    {pokemon.types && pokemon.types.map(typeInfo => (
-                      <Chip
-                        key={typeInfo.type.name}
-                        label={typeInfo.type.name.toUpperCase()}
-                        size="small"
-                        sx={{ ...getTypeChipStyles(typeInfo.type.name), fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
-                      />
-                    ))}
-                  </Box>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    size="medium"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelectPokemon(pokemon);
-                    }}
-                    sx={{
-                      mt: 1,
-                      fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                      fontWeight: 'bold',
-                      minWidth: { xs: '80%', sm: 'auto' }, // Make button wider on small screens
-                      boxShadow: theme.shadows[2],
-                      '&:hover': {
-                        boxShadow: theme.shadows[4],
-                        transform: 'translateY(-2px)', // Slight lift on button hover
-                      }
-                    }}
-                  >
-                    Add to Team
-                  </Button>
-                </CardContent>
-              </Card>
+              />
             </Grid>
           ))}
           {displayedPokemonDetails.length === 0 && (searchTerm !== '' || selectedGen !== 'all') && !loadingMore && (
@@ -493,6 +407,7 @@ function Pokedex({ onSelectPokemon }) {
         open={openDialog}
         onClose={handleCloseDialog}
         pokemon={selectedPokemon}
+        onAddTeam={onSelectPokemon}
       />
     </Container>
   );
